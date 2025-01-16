@@ -143,7 +143,7 @@ func LoadModel(model string, maxArraySize int) (*ggml.GGML, error) {
 }
 
 // NewLlamaServer will run a server for the given GPUs
-func NewLlamaServer(gpus discover.GpuInfoList, modelPath string, f *ggml.GGML, adapters, projectors []string, opts api.Options, numParallel int) (LlamaServer, error) {
+func NewLlamaServer(gpus discover.GpuInfoList, modelPath string, f *ggml.GGML, adapters, projectors []string, controlVectors []string, opts api.Options, numParallel int) (LlamaServer, error) {
 	var llamaModel *llama.Model
 	var textProcessor model.TextProcessor
 	var err error
@@ -174,7 +174,7 @@ func NewLlamaServer(gpus discover.GpuInfoList, modelPath string, f *ggml.GGML, a
 
 	opts.NumBatch = min(opts.NumBatch, opts.NumCtx)
 
-	loadRequest := LoadRequest{LoraPath: adapters, KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
+	loadRequest := LoadRequest{LoraPath: adapters, ControlVectorPaths: make([]string, 0), KvSize: opts.NumCtx * numParallel, BatchSize: opts.NumBatch, Parallel: numParallel, MultiUserCache: envconfig.MultiUserCache()}
 
 	defaultThreads := discover.GetSystemInfo().GetOptimalThreadCount()
 	if opts.NumThread > 0 {
@@ -191,6 +191,18 @@ func NewLlamaServer(gpus discover.GpuInfoList, modelPath string, f *ggml.GGML, a
 
 	if len(projectors) > 0 && llamaModel != nil {
 		loadRequest.ProjectorPath = projectors[0]
+	}
+
+	if len(controlVectors) > 0 {
+		for i, controlVector := range controlVectors {
+			// Check if there is a stength provided via PARAMETERS
+			if len(opts.ControlStrength) > i {
+				sep := "="
+				controlVector = fmt.Sprintf("%s%s%s", controlVector, sep, opts.ControlStrength[i])
+			}
+
+			loadRequest.ControlVectorPaths = append(loadRequest.ControlVectorPaths, controlVector)
+		}
 	}
 
 	// This will disable flash attention unless all GPUs on the system support it, even if we end up selecting a subset
@@ -473,15 +485,16 @@ func (o LoadOperation) String() string {
 type LoadRequest struct {
 	Operation LoadOperation
 
-	LoraPath       []string
-	Parallel       int
-	BatchSize      int
-	FlashAttention bool
-	KvSize         int
-	KvCacheType    string
-	NumThreads     int
-	GPULayers      ml.GPULayersList
-	MultiUserCache bool
+	LoraPath           []string
+	ControlVectorPaths []string
+	Parallel           int
+	BatchSize          int
+	FlashAttention     bool
+	KvSize             int
+	KvCacheType        string
+	NumThreads         int
+	GPULayers          ml.GPULayersList
+	MultiUserCache     bool
 
 	// Legacy fields - not used with the Ollama engine
 	ProjectorPath string
