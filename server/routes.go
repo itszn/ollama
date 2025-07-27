@@ -1622,6 +1622,8 @@ func (s *Server) ChatHandler(c *gin.Context) {
 
 	useHarmony := shouldUseHarmony(m)
 
+	slog.Debug("chatPrompt", "template", req.Template)
+
 	processedTools := req.Tools
 	if useHarmony {
 		harmonyMessageHandler = harmony.NewHarmonyMessageHandler()
@@ -1641,7 +1643,7 @@ func (s *Server) ChatHandler(c *gin.Context) {
 		}
 	}
 
-	prompt, images, err := chatPrompt(c.Request.Context(), m, r.Tokenize, opts, msgs, processedTools, req.Think)
+	prompt, images, err := chatPrompt(c.Request.Context(), m, r.Tokenize, opts, msgs, processedTools, req.Think, req.Template)
 	if err != nil {
 		slog.Error("chat prompt error", "error", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

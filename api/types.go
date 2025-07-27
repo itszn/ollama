@@ -128,6 +128,9 @@ type ChatRequest struct {
 	// DebugRenderOnly is a debug option that, when set to true, returns the rendered
 	// template instead of calling the model.
 	DebugRenderOnly bool `json:"_debug_render_only,omitempty"`
+
+	// Template overrides the model's default prompt template.
+	Template string `json:"template"`
 }
 
 type Tools []Tool
