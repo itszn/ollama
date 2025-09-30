@@ -69,6 +69,7 @@ type Usage struct {
 type ResponseFormat struct {
 	Type       string      `json:"type"`
 	JsonSchema *JsonSchema `json:"json_schema,omitempty"`
+	Grammar    *string     `json:"grammar,omitempty"`
 }
 
 type JsonSchema struct {
@@ -554,6 +555,8 @@ func fromChatRequest(r ChatCompletionRequest) (*api.ChatRequest, error) {
 			if r.ResponseFormat.JsonSchema != nil {
 				format = r.ResponseFormat.JsonSchema.Schema
 			}
+		case "grammar":
+			format = json.RawMessage(*r.ResponseFormat.Grammar)
 		}
 	}
 

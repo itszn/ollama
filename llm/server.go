@@ -1410,6 +1410,14 @@ func (s *llmServer) Completion(ctx context.Context, req CompletionRequest, fn fu
 		case `"json"`:
 			req.Grammar = grammarJSON
 		default:
+			if strings.HasPrefix(string(req.Format), `"root`) {
+				var grammar string
+				if err := json.Unmarshal(req.Format, &grammar); err != nil {
+					return fmt.Errorf("invalid format: %q; expected \"json\" or a valid JSON Schema object", req.Format)
+				}
+				req.Grammar = grammar
+				break
+			}
 			if req.Format[0] != '{' {
 				return fmt.Errorf("invalid format: %q; expected \"json\" or a valid JSON Schema object", req.Format)
 			}
